@@ -1,0 +1,17 @@
+# SellSysInsurance Dependencies
+
+# Claude AI SDK
+anthropic>=0.39.0
+
+# Document parsing libraries
+openpyxl>=3.1.2        # Excel files (.xlsx, .xls)
+python-docx>=1.1.0     # Word files (.docx)
+python-pptx>=0.6.23    # PowerPoint files (.pptx)
+PyPDF2>=3.0.1          # PDF files
+
+# Encryption (optional, if needed)
+cryptography>=41.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
