@@ -24,6 +24,7 @@ wheels/
 venv/
 env/
 ENV/
+myenv/
 
 # IDEs
 .vscode/
@@ -50,3 +51,18 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# Environment files
+.env
+.env.local
+
+# Test data files
+data/*.pdf
+data/*.xlsx
+data/*.docx
+data/*.pptx
+
+# Command line argument placeholders
+--*
+python
+stream*

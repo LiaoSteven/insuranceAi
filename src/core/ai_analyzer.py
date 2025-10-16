@@ -12,12 +12,13 @@ import anthropic
 class AIAnalyzer:
     """Claude AI分析器"""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, base_url: str = None):
         """
         初始化AI分析器
 
         Args:
             api_key: Anthropic API密钥，如果不提供则从环境变量读取
+            base_url: API Base URL，用于第三方API提供商
         """
         if api_key is None:
             api_key = os.getenv('ANTHROPIC_API_KEY')
@@ -25,7 +26,15 @@ class AIAnalyzer:
         if not api_key:
             raise ValueError("请提供ANTHROPIC_API_KEY环境变量或传入api_key参数")
 
-        self.client = anthropic.Anthropic(api_key=api_key)
+        # 支持自定义base_url（用于第三方API提供商）
+        if base_url is None:
+            base_url = os.getenv('ANTHROPIC_BASE_URL')
+
+        if base_url:
+            self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
+        else:
+            self.client = anthropic.Anthropic(api_key=api_key)
+
         self.model = os.getenv('CLAUDE_MODEL', 'claude-3-5-sonnet-20241022')
 
     def analyze_product_comparison(self, product_data: str, competitor_data: str = None) -> str:

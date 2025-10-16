@@ -23,12 +23,26 @@ class Settings:
         # 加密配置（如果需要文件加密功能）
         self.ENCRYPTION_PASSWORD = os.getenv('ENCRYPTION_PASSWORD')
 
-        # 目录配置
+        # 数据目录配置 - 输入文件分类
         self.DATA_DIR = self.BASE_DIR / 'data'
+        self.DATA_PRODUCT_DIR = self.DATA_DIR / 'product'        # 产品文档
+        self.DATA_COMPETITOR_DIR = self.DATA_DIR / 'competitor'  # 竞品文档
+        self.DATA_CUSTOMER_DIR = self.DATA_DIR / 'customer'      # 客户信息
+        self.DATA_CATALOG_DIR = self.DATA_DIR / 'catalog'        # 产品目录
         self.ENCRYPTED_DIR = self.DATA_DIR / 'encrypted'
         self.TEMPLATES_DIR = self.DATA_DIR / 'templates'
+
+        # 输出目录配置 - 按类型分类存档
         self.OUTPUT_DIR = self.BASE_DIR / 'output'
-        self.SALES_SCRIPTS_DIR = self.OUTPUT_DIR / 'sales_scripts'
+        self.OUTPUT_EXTRACTED_DIR = self.OUTPUT_DIR / 'extracted_data'     # 提取的原始数据(JSON)
+        self.OUTPUT_ANALYSIS_DIR = self.OUTPUT_DIR / 'analysis_reports'    # AI分析报告
+        self.OUTPUT_SCRIPTS_DIR = self.OUTPUT_DIR / 'sales_scripts'        # 销售话术
+        self.OUTPUT_PRESENTATIONS_DIR = self.OUTPUT_DIR / 'presentations'  # 演示大纲
+        self.OUTPUT_RECOMMENDATIONS_DIR = self.OUTPUT_DIR / 'recommendations'  # 客户推荐
+        self.OUTPUT_EMAILS_DIR = self.OUTPUT_DIR / 'emails'                # 销售邮件
+
+        # 兼容旧代码
+        self.SALES_SCRIPTS_DIR = self.OUTPUT_SCRIPTS_DIR
 
         # 确保目录存在
         self._ensure_directories()
@@ -36,11 +50,22 @@ class Settings:
     def _ensure_directories(self):
         """确保必要的目录存在"""
         directories = [
+            # 输入数据目录
             self.DATA_DIR,
+            self.DATA_PRODUCT_DIR,
+            self.DATA_COMPETITOR_DIR,
+            self.DATA_CUSTOMER_DIR,
+            self.DATA_CATALOG_DIR,
             self.ENCRYPTED_DIR,
             self.TEMPLATES_DIR,
+            # 输出数据目录
             self.OUTPUT_DIR,
-            self.SALES_SCRIPTS_DIR
+            self.OUTPUT_EXTRACTED_DIR,
+            self.OUTPUT_ANALYSIS_DIR,
+            self.OUTPUT_SCRIPTS_DIR,
+            self.OUTPUT_PRESENTATIONS_DIR,
+            self.OUTPUT_RECOMMENDATIONS_DIR,
+            self.OUTPUT_EMAILS_DIR
         ]
 
         for directory in directories:
@@ -79,10 +104,6 @@ class Settings:
 )"""
 
 
-# 全局配置实例
-settings = Settings()
-
-
 def load_env_file(env_file: str = '.env'):
     """
     从.env文件加载环境变量
@@ -118,6 +139,12 @@ def load_env_file(env_file: str = '.env'):
 
 # 启动时自动加载.env文件
 try:
-    load_env_file()
+    # 使用项目根目录的.env文件
+    env_path = Path(__file__).resolve().parent.parent.parent / '.env'
+    load_env_file(str(env_path))
 except Exception as e:
     print(f"⚠️  加载.env文件失败: {e}")
+
+
+# 全局配置实例（在加载.env文件之后创建）
+settings = Settings()

@@ -5,8 +5,11 @@
 """
 
 import os
+import json
+import csv
 from typing import Dict, List, Any
-import io
+from pathlib import Path
+from datetime import datetime
 
 
 class DocumentParser:
@@ -298,3 +301,148 @@ def parse_multiple_documents(file_paths: List[str]) -> Dict[str, str]:
             results[file_path] = f"解析失败: {str(e)}"
 
     return results
+
+
+class DataExporter:
+    """数据导出器 - 支持JSON、CSV等格式"""
+
+    @staticmethod
+    def save_as_json(data: Dict[str, Any], output_path: str, pretty: bool = True) -> str:
+        """
+        将提取的数据保存为JSON文件
+
+        Args:
+            data: 提取的文档数据字典
+            output_path: 输出文件路径
+            pretty: 是否格式化输出(方便阅读)
+
+        Returns:
+            保存的文件路径
+        """
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 添加元数据
+        export_data = {
+            "metadata": {
+                "exported_at": datetime.now().isoformat(),
+                "exporter": "SellSysInsurance DataExporter",
+                "version": "1.0"
+            },
+            "data": data
+        }
+
+        with open(output_path, 'w', encoding='utf-8') as f:
+            if pretty:
+                json.dump(export_data, f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(export_data, f, ensure_ascii=False)
+
+        print(f"✅ JSON文件已保存: {output_path}")
+        return str(output_path)
+
+    @staticmethod
+    def save_as_csv(data: Dict[str, Any], output_path: str) -> str:
+        """
+        将Excel类型的数据保存为CSV文件
+
+        Args:
+            data: 提取的文档数据字典
+            output_path: 输出文件路径
+
+        Returns:
+            保存的文件路径(如果是Excel数据会保存多个CSV文件)
+
+        Note:
+            仅支持Excel类型的数据,其他类型建议使用JSON
+        """
+        file_type = data.get("file_type", "unknown")
+
+        if file_type != "excel":
+            raise ValueError(f"CSV导出仅支持Excel文件,当前文件类型: {file_type}")
+
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 如果有多个sheet,为每个sheet创建单独的CSV文件
+        sheets = data.get("sheets", {})
+        saved_files = []
+
+        if len(sheets) == 1:
+            # 只有一个sheet,直接保存为指定文件名
+            sheet_name, sheet_data = list(sheets.items())[0]
+            DataExporter._write_csv(sheet_data, output_path)
+            saved_files.append(str(output_path))
+        else:
+            # 多个sheet,为每个创建单独文件
+            base_name = output_path.stem
+            base_dir = output_path.parent
+
+            for sheet_name, sheet_data in sheets.items():
+                # 清理sheet名称,去除特殊字符
+                safe_sheet_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in sheet_name)
+                csv_path = base_dir / f"{base_name}_{safe_sheet_name}.csv"
+                DataExporter._write_csv(sheet_data, csv_path)
+                saved_files.append(str(csv_path))
+
+        print(f"✅ CSV文件已保存: {len(saved_files)}个文件")
+        for f in saved_files:
+            print(f"   - {f}")
+
+        return saved_files[0] if len(saved_files) == 1 else str(output_path.parent)
+
+    @staticmethod
+    def _write_csv(rows: List[List[str]], output_path: Path):
+        """
+        写入CSV文件
+
+        Args:
+            rows: 行数据列表
+            output_path: 输出路径
+        """
+        with open(output_path, 'w', encoding='utf-8-sig', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(rows)
+
+    @staticmethod
+    def export_extracted_data(
+        data: Dict[str, Any],
+        output_dir: str,
+        formats: List[str] = None
+    ) -> Dict[str, str]:
+        """
+        导出提取的数据到多种格式
+
+        Args:
+            data: 提取的文档数据
+            output_dir: 输出目录
+            formats: 导出格式列表,默认['json']。可选: 'json', 'csv'
+
+        Returns:
+            格式到文件路径的映射
+        """
+        if formats is None:
+            formats = ['json']
+
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        file_name = data.get("file_name", "unknown")
+        base_name = Path(file_name).stem
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        results = {}
+
+        for fmt in formats:
+            if fmt == 'json':
+                json_path = output_dir / f"{base_name}_{timestamp}.json"
+                results['json'] = DataExporter.save_as_json(data, str(json_path))
+
+            elif fmt == 'csv':
+                if data.get("file_type") == "excel":
+                    csv_path = output_dir / f"{base_name}_{timestamp}.csv"
+                    results['csv'] = DataExporter.save_as_csv(data, str(csv_path))
+                else:
+                    print(f"⚠️  {file_name} 不是Excel文件,跳过CSV导出")
+
+        return results
